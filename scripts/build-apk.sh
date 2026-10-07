@@ -171,7 +171,7 @@ make_apk() {
   install -D -m0644 "$OPENWRT_DIR/config.yaml"    "$stage/etc/gatus/config.yaml"
 
   local pkgver="${GATUS_VERSION}-r${PKG_RELEASE}"
-  local out="$OUT_DIR/${PKG_NAME}-${pkgver}.apk"
+  local out="$OUT_DIR/${PKG_NAME}-${pkgver}_${OWRT_ARCH}.apk"
   local sign=()
   [ -n "$SIGN_KEY" ] && sign=(--sign-key "$SIGN_KEY")
 

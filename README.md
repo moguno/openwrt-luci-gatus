@@ -62,7 +62,7 @@ make apk TARGET=mediatek/mt7622 ARCH=aarch64_cortex-a53 RELEASE=25.12.4
 主なオプションは `./scripts/build-apk.sh --help` を参照してください。
 ビルドすると次の 2 つの apk が生成されます（`--no-luci` で LuCI プラグインを除外）。
 
-- `dist/gatus-<ver>-r1.apk` — 本体（arch: ターゲット依存）
+- `dist/gatus-<ver>-r1_<arch>.apk` — 本体（arch はターゲット依存。例: `gatus-5.37.0-r1_aarch64_cortex-a53.apk`）
 - `dist/luci-app-gatus-<ver>-r1.apk` — LuCI プラグイン（arch: `noarch`）
 
 > 補足: gatus の `go.mod` は新しい Go を要求することがあります（例: go 1.26）。
@@ -89,8 +89,8 @@ make apk TARGET=mediatek/mt7622 ARCH=aarch64_cortex-a53 RELEASE=25.12.4
 生成した apk は未署名です。転送して次のようにインストールします。
 
 ```sh
-scp -O dist/gatus-<ver>-r1.apk dist/luci-app-gatus-<ver>-r1.apk root@<device>:/tmp/
-ssh root@<device> 'apk add --allow-untrusted /tmp/gatus-<ver>-r1.apk /tmp/luci-app-gatus-<ver>-r1.apk'
+scp -O dist/gatus-<ver>-r1_<arch>.apk dist/luci-app-gatus-<ver>-r1.apk root@<device>:/tmp/
+ssh root@<device> 'apk add --allow-untrusted /tmp/gatus-<ver>-r1_<arch>.apk /tmp/luci-app-gatus-<ver>-r1.apk'
 ssh root@<device> '/etc/init.d/gatus enable && /etc/init.d/gatus start'
 ```
 
@@ -116,10 +116,22 @@ ssh root@<device> '/etc/init.d/gatus enable && /etc/init.d/gatus start'
 例（実機: OpenWrt 25.12.4 / mediatek mt7622 / aarch64_cortex-a53）:
 
 ```sh
-scp -O dist/gatus-5.37.0-r1.apk root@192.168.0.5:/tmp/
-ssh root@192.168.0.5 'apk add --allow-untrusted /tmp/gatus-5.37.0-r1.apk \
+scp -O dist/gatus-5.37.0-r1_aarch64_cortex-a53.apk dist/luci-app-gatus-5.37.0-r1.apk root@192.168.0.5:/tmp/
+ssh root@192.168.0.5 'apk add --allow-untrusted /tmp/gatus-5.37.0-r1_aarch64_cortex-a53.apk /tmp/luci-app-gatus-5.37.0-r1.apk \
   && /etc/init.d/gatus enable && /etc/init.d/gatus start'
 ```
+
+## リリース（GitHub Releases に apk を添付）
+
+`v*` 形式のタグを push すると `release` ジョブが動き、全ターゲットの apk を
+GitHub Release の添付ファイルとして公開します。
+
+```sh
+git tag v5.37.0
+git push origin v5.37.0
+```
+
+- 手動で試す場合は Actions の `Run workflow`（workflow_dispatch）でも apk を Artifact として取得できます。
 
 ### 収録物
 
