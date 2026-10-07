@@ -1,0 +1,101 @@
+name: Build OpenWrt APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'OpenWrt target (e.g. mediatek/mt7622)'
+        required: false
+      arch:
+        description: 'apk arch (e.g. aarch64_cortex-a53)'
+        required: false
+      release:
+        description: 'OpenWrt release (e.g. 25.12.4)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.target }} / ${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: mediatek/mt7622
+            arch: aarch64_cortex-a53
+          - target: x86/64
+            arch: x86_64
+    steps:
+      - name: Checkout (with gatus submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: gatus/go.mod
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zstd
+          UPX_VERSION=4.2.4
+          curl -fsSL -o /tmp/upx.tar.xz \
+            "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz"
+          tar -xf /tmp/upx.tar.xz -C /tmp
+          sudo install "/tmp/upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/upx
+          upx --version
+
+      - name: Cache OpenWrt SDK
+        uses: actions/cache@v4
+        with:
+          path: .cache/sdk
+          key: sdk-${{ github.event.inputs.release || '25.12.4' }}-${{ matrix.target }}
+
+      - name: Build APK
+        env:
+          TARGET: ${{ github.event.inputs.target || matrix.target }}
+          ARCH: ${{ github.event.inputs.arch || matrix.arch }}
+          RELEASE: ${{ github.event.inputs.release || '25.12.4' }}
+        run: |
+          ./scripts/build-apk.sh \
+            --target "$TARGET" \
+            --arch "$ARCH" \
+            --release "$RELEASE" \
+            --upx
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gatus-apk-${{ matrix.arch }}
+          path: dist/*.apk
+          if-no-files-found: error
+
+  release:
+    name: release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List packages
+        run: ls -l dist
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.apk

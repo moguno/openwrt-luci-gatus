@@ -1,0 +1,16 @@
+{
+	"luci-app-gatus": {
+		"description": "Grant access to edit the Gatus configuration",
+		"read": {
+			"file": {
+				"/etc/gatus/config.yaml": [ "read" ]
+			}
+		},
+		"write": {
+			"file": {
+				"/etc/gatus/config.yaml": [ "write" ],
+				"/etc/init.d/gatus restart": [ "exec" ]
+			}
+		}
+	}
+}

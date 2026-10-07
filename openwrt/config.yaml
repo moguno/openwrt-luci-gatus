@@ -1,0 +1,12 @@
+# gatus の既定設定。有効化後は /etc/gatus/config.yaml を編集してください。
+storage:
+  type: sqlite
+  path: /var/lib/gatus/data.db
+
+endpoints:
+  - name: example
+    group: default
+    url: https://example.com
+    interval: 1m
+    conditions:
+      - "[STATUS] == 200"
